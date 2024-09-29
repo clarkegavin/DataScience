@@ -3,6 +3,7 @@ import matplotlib.pyplot as plt
 import seaborn as sns
 import plotly.express as px #  for 3D scatter plots
 import plotly.io as pio
+from sklearn.tree import DecisionTreeClassifier, plot_tree
 import numpy as np
 # import warnings
 
@@ -99,7 +100,16 @@ plt.show()
 
 #3D scatter plots
 fig = px.scatter_3d(iris, x='sepallength', y='petallength', z='petalwidth', color='iris')
-fig.show()
+fig.show()  # can take longer to generate this than the program runs which will prevent it from being displayed!
+# add another plt.show() afterwards so that it waits until this is rendered
 pio.renderers.default = 'png'
 
 print(pio.renderers.default)
+
+# DecisionTrees
+print("--Decision Trees--")
+dt = DecisionTreeClassifier()
+dt.fit(regular_attributes, label_attribute)
+plt.figure(figsize=(10, 7))
+plot_tree(dt, filled=True, feature_names=list(iris.columns), class_names=list(iris['iris'].unique()))
+plt.show()
