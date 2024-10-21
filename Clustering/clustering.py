@@ -35,12 +35,12 @@ print(df[df.duplicated()])
 
 # Histogram for frequency distribution
 df.hist(figsize=(10, 7))
-plt.show()
+#plt.show()
 
 print("3D Scatter Plot")
 fig = px.scatter_3d(df, x='att1', y='att2', z='att3')
 fig.update_layout(title=dict(text="3D distribution of unscaled data"))
-plotly.offline.plot(fig)
+#plotly.offline.plot(fig)
 
 
 # scale data into a new dataframe retaining original column names
@@ -49,12 +49,12 @@ scaled_df = pd.DataFrame(scaled_df, columns=df.columns)
 print("Scaled data--------------------")
 print("Scaled Data Histogram")
 scaled_df.hist(figsize=(10, 7))
-plt.show()
+#plt.show()
 
 print("3D Scatter Plot")
 fig = px.scatter_3d(scaled_df, x='att1', y='att2', z='att3')
 fig.update_layout(title=dict(text="3D distribution of scaled data"))
-plotly.offline.plot(fig)
+#plotly.offline.plot(fig)
 
 
 print("Elbow Method")
@@ -75,25 +75,38 @@ plt.plot(range(1, 11), sse)
 plt.xticks(range(1, 11))
 plt.xlabel("Number of Clusters")
 plt.ylabel("SSE")
-plt.show()
+#plt.show()
 
 
-#Create k-means
 krandom_model = KMeans(n_clusters=3, init='random', random_state=1).set_output(transform='pandas')
 results = krandom_model.fit_transform(scaled_df)
+print(results.head)
 print(krandom_model.labels_)
+krandom_data = scaled_df.copy()
+krandom_data['cluster'] = krandom_model.labels_
+print(krandom_data.head())
 
+#create a dataframe with the centroids
+centroid_table = pd.DataFrame(krandom_model.cluster_centers_, columns=scaled_df.columns)
+centroid_table['cluster'] = ['centroid 0', 'centroid 1', 'centroid 2']
+print(centroid_table.head())
+#plot the centroids
+fig = px.parallel_coordinates(centroid_table, 'cluster')
+plt.show()
 
-
+"""
 # Create k-means instance on scaled dataset
 kmeans = KMeans(n_clusters=4)
-y = kmeans.fit_predict(scaled_df[['att1', 'att2', 'att3']])
-scaled_df['Cluster'] = y
-# Create 3D scatter plot with the dataframe data, assign axis names and colour by 'cluster' attribute
+results = kmeans.fit_predict(scaled_df[['att1', 'att2', 'att3']])
+scaled_df['Cluster'] = results
 fig = px.scatter_3d(scaled_df, x='att1', y='att2', z='att3', color='Cluster')
-# display centroid
-# fig.add_trace(go.Scatter3d(x=centroids[:,0], y=centroids[:,1], z=centroids[:,2],  text="Centroid", mode='markers', marker=dict(size=10, color='black')))
-plotly.offline.plot(fig)
+#plotly.offline.plot(fig)
+
+
+#Plot Centroids
+centroid_table = pd.DataFrame(results.cluster_centers_, columns=scaled_df.columns)
+print(centroid_table)
+"""
 
 # 1. Understand the Business Requirement
 # 2. Understand the data
