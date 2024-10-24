@@ -65,8 +65,8 @@ def plot_elbow_method(dfs, range_from, range_to, **kmeans_kwargs):
     plt.show()
 
 
-def plot_kmeans_3d_scatter(k, dfs, x, y, z, title="3D Scatter Plot", **kmeans_kwargs):
-    kmeans = KMeans(n_clusters=k, **kmeans_kwargs)
+def plot_kmeans_3d_scatter(dfs, x, y, z, title="3D Scatter Plot", **kmeans_kwargs):
+    kmeans = KMeans(**kmeans_kwargs)
     results = kmeans.fit_predict(dfs[[x, y, z]])
     dfs['Cluster'] = results
     fig = px.scatter_3d(dfs, x=x, y=y, z=z, color='Cluster', title=title)
@@ -121,6 +121,40 @@ def dbscan_gridsearch(dfs, eps_from, eps_to, eps_increment, min_samples_from, mi
     print(f"DBSCAN Best Parameters: {grid_search.best_params_}")
 
 
+def kmeans_gridsearch(dfs):
+    param_grid = {
+        'n_clustsers': range(2, 10),
+        'init': ['k-means++', 'random'],
+        'n_init': [5, 10, 15],
+        'max_iter': [100, 200, 300, 400, 500],
+        'random_state': [1, 16, 34, 57]
+    }
+
+    kmeans=KMeans()
+    grid_search = GridSearchCV(kmeans, param_grid)
+    grid_search.fit(dfs)
+    print(f"KMeans Best Parameters: {grid_search.best_params_}")
+
+def grid_search(dfs, param_grid, algo):
+
+    if algo == 'kmeans':
+        kmeans = KMeans()
+        grid_search = GridSearchCV(kmeans, param_grid)
+        grid_search.fit(dfs)
+        print(f"KMeans Best Parameters: {grid_search.best_params_}")
+    elif algo == 'agglomerative':
+        aggl = AgglomerativeClustering()
+        grid_search = GridSearchCV(dfs, param_grid)
+        grid_search.fit(dfs)
+        print(f"DBSCAN Best Parameters: {grid_search.best_params_}")
+    elif algo == 'dbscan':
+        dbscan = DBSCAN()
+        grid_search = GridSearchCV(dbscan, param_grid)
+        grid_search.fit(dfs)
+        print(f"DBSCAN Best Parameters: {grid_search.best_params_}")
+    else:
+        print(f"ERROR: Invalid algorithm: {algo}")
+
 
 # unscaled data
 # describe_data_out(df, "datasets/dataset_description.csv", ',')
@@ -146,8 +180,8 @@ scaled_df = pd.DataFrame(scaled_df, columns=df.columns)
 # plot_kmeans_3d_scatter(4, scaled_df, 'att1', 'att2', 'att3', "Scaled 3d k-means (k-means++) scatter plot",
 #                       **kmeans_kwargs)
 
-#kmeans_kwargs = {"init": "random", "random_state": 1}
-#plot_kmeans_3d_scatter(4, scaled_df, 'att1', 'att2', 'att3', "Scaled 3d k-means (random) scatter plot", **kmeans_kwargs)
+kmeans_kwargs = {"init": "k-means++", "random_state": 57, "max_iter":100, "n_clusters": 9, "n_init": 5}
+plot_kmeans_3d_scatter(scaled_df, 'att1', 'att2', 'att3', "Scaled 3d k-means (random) scatter plot", **kmeans_kwargs)
 
 # Agglomerative/Divisive Clustering
 # single linkage - not biased for globular shapes
@@ -173,7 +207,23 @@ scaled_df = pd.DataFrame(scaled_df, columns=df.columns)
 
 # plot_optimal_eps(scaled_df, 5)
 
-dbscan_gridsearch(scaled_df, eps_from=0.5, eps_to=2, eps_increment=0.25, min_samples_from=5, min_samples_to=10)
+#dbscan_gridsearch(scaled_df, eps_from=0.5, eps_to=2, eps_increment=0.25, min_samples_from=5, min_samples_to=10)
+
+param_grid = {
+        'n_clusters': range(2, 10),
+        'init': ['k-means++', 'random'],
+        'n_init': [5, 10, 15],
+        'max_iter': [100, 200, 300, 400, 500],
+        'random_state': [1, 16, 34, 57]
+}
+#grid_search(scaled_df, param_grid, 'kmeans')
+
+param_grid = {
+        'eps': np.arange(0.5, 2, 0.25),
+        'min_samples': range(2, 5),
+        'scoring': ['silhouette_score']
+}
+
 
 """
 
