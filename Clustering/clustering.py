@@ -5,6 +5,7 @@ import pandas as pd
 import matplotlib.pyplot as plt
 import plotly.offline
 import plotly.express as px  # for 3D scatter plots
+from plotly.subplots import make_subplots
 from sklearn.cluster import KMeans, AgglomerativeClustering, DBSCAN
 from sklearn.metrics import silhouette_score, make_scorer
 from sklearn.model_selection import GridSearchCV
@@ -27,6 +28,8 @@ def describe_data(dfs):
     dfs.info()
     print(f"Data Description: \n {dfs.describe()}")
 
+def calc_variance(dfs):
+    print(f"Data Variance: {dfs.var()}")
 
 def null_check(dfs):
     print(f"Null Data Check: \n {dfs.isnull().sum()}")
@@ -52,7 +55,7 @@ def scatter_3d(dfs, x, y, z, title='3D Scatter Plot'):
 def plot_elbow_method(dfs, range_from, range_to, **kmeans_kwargs):
     sse = []
     for k in range(1, 11):
-        kmeans = KMeans(n_clusters=k, **kmeans_kwargs)
+        kmeans = KMeans(**kmeans_kwargs)
         kmeans.fit(dfs)
         sse.append(kmeans.inertia_)
     print(f"Elbow Method: {sse}")  # print inertia calculations
@@ -71,6 +74,9 @@ def plot_kmeans_3d_scatter(dfs, x, y, z, title="3D Scatter Plot", **kmeans_kwarg
     dfs['Cluster'] = results
     fig = px.scatter_3d(dfs, x=x, y=y, z=z, color='Cluster', title=title)
     plotly.offline.plot(fig)
+    return fig
+
+
 
 
 def plot_agglomerative_3d_scatter(dfs, n_clusters, linkage, x, y, z, title="Agglomerative Clustering"):
@@ -158,7 +164,8 @@ def grid_search(dfs, param_grid, algo):
 
 # unscaled data
 # describe_data_out(df, "datasets/dataset_description.csv", ',')
-# describe_data(df)
+#describe_data(df)
+# with calc_variance(df)
 # null_check(df)
 # duplicate_check(df)
 # histogram(df)
@@ -169,19 +176,44 @@ scaled_df = StandardScaler().fit_transform(df)
 scaled_df = pd.DataFrame(scaled_df, columns=df.columns)
 # describe_data_out(scaled_df, "datasets/dataset_description.csv", ',')
 # describe_data(scaled_df)
+# calc_variance(scaled_df)
 # null_check(scaled_df)
 # duplicate_check(scaled_df)
 # histogram(scaled_df)
 # scatter_3d(scaled_df, 'att1', 'att2', 'att3', '3D distribution of scaled data')
 
 # K-means Algorithm
-# kmeans_kwargs = {"init": "k-means++", "n_init": 10, "random_state": 1}
-# plot_elbow_method(scaled_df, 1, 10, **kmeans_kwargs)
-# plot_kmeans_3d_scatter(4, scaled_df, 'att1', 'att2', 'att3', "Scaled 3d k-means (k-means++) scatter plot",
+kmeans_kwargs = {"n_clusters": 4, "init": "k-means++", "n_init": 10, "random_state": 1}
+#plot_elbow_method(scaled_df, 1, 10, **kmeans_kwargs)
+#fig1 = plot_kmeans_3d_scatter(scaled_df, 'att1', 'att2', 'att3', "Scaled 3d k-means (k-means++) scatter plot",
 #                       **kmeans_kwargs)
 
-kmeans_kwargs = {"init": "k-means++", "random_state": 57, "max_iter":100, "n_clusters": 9, "n_init": 5}
-plot_kmeans_3d_scatter(scaled_df, 'att1', 'att2', 'att3', "Scaled 3d k-means (random) scatter plot", **kmeans_kwargs)
+#kmeans_kwargs = {"init": "k-means++", "random_state": 57, "max_iter":100, "n_clusters": 9, "n_init": 5}
+
+#fig2 = plot_kmeans_3d_scatter(scaled_df, 'att1', 'att2', 'att3', "Scaled 3d k-means (random) scatter plot", **kmeans_kwargs)
+
+n_cluster_range = range(3,7)
+
+def multi_2x2_3d_scatter_plot(n_cluster_range, **kmeans_kwargs):
+    num_plots = 4
+    num_cols = 2
+    num_rows = (num_plots + num_cols - 1) // num_cols #calculate number of rows to avoid errors
+    fig = make_subplots(rows=num_rows, cols=num_cols,
+                        specs=[[{'type': 'scatter3d'} for _ in range(num_cols)] for _ in range(num_rows)])
+
+    for i, n_clusters in enumerate(range(3, 7), start=1):
+        kmeans_kwargs = {"n_clusters": n_clusters, "init": "random", "random_state": 1}
+        kmeans_fig = plot_kmeans_3d_scatter(scaled_df, 'att1', 'att2', 'att3', f"Scaled 3d k-means random with {n_clusters} " 
+                                                     "Clusters scatter plot", **kmeans_kwargs)
+
+        # Determine row & column based on the iteration index
+        row = (i - 1) // 2 + 1
+        col = (i - 1) % 2 + 1
+        fig.add_trace(kmeans_fig.data[0], row=row, col=col)
+
+    fig.update_layout(height=400*num_rows, width=600*num_cols, title_text="K-Means Clustering with Varying n_clusters")
+    plotly.offline.plot(fig)
+
 
 # Agglomerative/Divisive Clustering
 # single linkage - not biased for globular shapes
