@@ -1,3 +1,4 @@
+import time
 import warnings
 
 import numpy as np
@@ -5,12 +6,16 @@ import pandas as pd
 import matplotlib.pyplot as plt
 import plotly.offline
 import plotly.express as px  # for 3D scatter plots
+import plotly.io as pio
 from plotly.subplots import make_subplots
+from scipy.spatial.distance import cityblock
 from sklearn.cluster import KMeans, AgglomerativeClustering, DBSCAN
 from sklearn.metrics import silhouette_score, make_scorer
 from sklearn.model_selection import GridSearchCV
 from sklearn.neighbors import NearestNeighbors
 from sklearn.preprocessing import StandardScaler
+from sklearn.metrics import davies_bouldin_score
+
 import seaborn as sns
 
 # TODO: 1) Loops to check some agglomerative/dbscan values
@@ -21,6 +26,10 @@ df = pd.read_csv("datasets/assessment_cluster_dataset.csv")
 
 def describe_data_out(dfs, path, separator):
     dfs.describe().to_csv(path_or_buf=path, sep=separator)
+
+
+def data_out(dfs, path, separator):
+    dfs.to_csv(path_or_buf=path, sep=separator)
 
 
 def describe_data(dfs):
@@ -70,13 +79,22 @@ def plot_elbow_method(dfs, range_from, range_to, **kmeans_kwargs):
     plt.show()
 
 
-def plot_kmeans_3d_scatter(dfs, x, y, z, title="3D Scatter Plot", display=True, **kmeans_kwargs):
+def plot_kmeans_3d_scatter(dfs, x, y, z, title="3D Scatter Plot", display_individual_plot=True, plot_centroids=True,
+                           plot_iter=0, display_davies_bouldin_index=True, display_dunn_index=False, **kmeans_kwargs):
     kmeans = KMeans(**kmeans_kwargs)
     results = kmeans.fit_predict(dfs[[x, y, z]])
     dfs['Cluster'] = results
     fig = px.scatter_3d(dfs, x=x, y=y, z=z, color='Cluster', title=title)
-    if display:
-        plotly.offline.plot(fig)
+    if display_individual_plot:
+        plotly.offline.plot(fig, filename=f"Kmeans 3D Scatter Plot {plot_iter}.html")
+    if plot_centroids:
+        # results_df = pd.DataFrame(results, columns=['Cluster'])
+        centroid_table = parallel_centroid_plot(dfs, kmeans, plot_iter, **kmeans_kwargs)[[x, y, z]]
+        if display_dunn_index:
+            labels = kmeans.labels_
+            print(f"Dunn Index: {dunn_index(dfs, centroid_table, labels)}")
+    if display_davies_bouldin_index:
+        calc_davies_bouldin_index(dfs, kmeans)
     return fig
 
 
@@ -167,29 +185,34 @@ def grid_search(dfs, param_grid, algo):
     else:
         print(f"ERROR: Invalid algorithm: {algo}")
 
+
 # Display a grid of 3d scatter plots, 2 columns wide for an unknown number of plots
-def multi_3d_scatter_plot(n_cluster_range, x, y, z, **kmeans_kwargs):
-    num_plots = n_cluster_range[-1] - n_cluster_range[0] +1  # upper bound
+def multi_3d_scatter_plot(dfs, n_cluster_range, x, y, z, display_individual_plot=True, plot_centroids=0,
+                          **kmeans_kwargs):
+    num_plots = n_cluster_range[-1] - n_cluster_range[0] + 1  # upper bound
     num_cols = 2  # always use 2 columns
-    num_rows = (num_plots + num_cols - 1) // num_cols  # calculate number of rows rather than relying on parameter
-    print(f"number rows: {num_rows}")
-    num_cols=2
-    num_rows=2
-    fig = make_subplots(rows=num_rows, cols=num_cols, subplot_titles=[f"Number of clusters: {i}" for i in
-                        range(n_cluster_range[0], n_cluster_range[-1]+1)],
+    num_rows = int((num_plots + num_cols - 1) // num_cols)  # calculate number of rows rather than relying on parameter
+
+    fig = make_subplots(rows=num_rows, cols=num_cols,
+                        subplot_titles=[f"<span style = 'font-size: 10px'> n_clusters: {i} | "
+                                        f"init: {kmeans_kwargs['init']} | "
+                                        f"n_init: {kmeans_kwargs['n_init']} | "
+                                        f"random_state: {kmeans_kwargs['random_state']} </span>"
+                                        for i in range(n_cluster_range[0], n_cluster_range[-1] + 1)],
+
                         vertical_spacing=0.1,
                         specs=[[{'type': 'scatter3d'} for _ in range(num_cols)] for _ in range(num_rows)])
-
-
     fig.print_grid()
-    subplot_index=1
+
     for i, n_clusters in enumerate(n_cluster_range, start=1):
         # kmeans_kwargs = {"n_clusters": n_clusters, "init": "random", "random_state": 1}
         kmeans_kwargs['n_clusters'] = n_clusters
-        kmeans_fig = plot_kmeans_3d_scatter(scaled_df, x, y, z, f"3D Scatter Plot: init: {kmeans_kwargs['init']}<br>" 
-                                             f"n_clusters: {kmeans_kwargs['n_clusters']}<br>"
-                                                                    f"random_state: {kmeans_kwargs['random_state']}",
-
+        kmeans_fig = plot_kmeans_3d_scatter(dfs, x, y, z, f"3D Scatter Plot: init: {kmeans_kwargs['init']} <br> "
+                                                          f"<span style = 'font-size: 10px'>n_clusters: {kmeans_kwargs['n_clusters']} |"
+                                                          f"n_init: {kmeans_kwargs['n_init']} | "
+                                                          f"random_state: {kmeans_kwargs['random_state']}</span>",
+                                            display_individual_plot=display_individual_plot,
+                                            plot_centroids=plot_centroids, plot_iter=i,
                                             **kmeans_kwargs)
 
         # Determine row & column based on the iteration index
@@ -206,11 +229,69 @@ def multi_3d_scatter_plot(n_cluster_range, x, y, z, **kmeans_kwargs):
             )
         })
 
-
-
     fig.update_layout(height=600 * num_rows, width=600 * num_cols,
-                      title_text="K-Means Clustering with Varying n_clusters")
-    plotly.offline.plot(fig)
+                      title_text="K-Means Clustering with Varying n_clusters <br>")
+    plotly.offline.plot(fig, filename='Multi 3D Scatter Plot.html')
+
+
+def parallel_centroid_plot(dfs, kmeans_model, centroid_table, plot_iter=0, **kmeans_kwargs):
+    kmeans_model.fit(dfs)
+
+    centroid_table = pd.DataFrame(kmeans_model.cluster_centers_, columns=dfs.columns)
+    centroid_table['cluster'] = range(len(centroid_table))
+
+    # plot the centroids
+    fig = px.parallel_coordinates(centroid_table, dimensions=dfs.columns.tolist(), color='cluster',
+                                  title=f"Parallel Coordinates Plot of {kmeans_kwargs['n_clusters']} Cluster Centroids")
+    plotly.offline.plot(fig, filename=f'Parallel Centroid Plot {plot_iter}.html')
+    print(f"Centroid Table for n_clusters={kmeans_kwargs['n_clusters']}\n {centroid_table}")
+    data_out(centroid_table, "datasets/centroid_table.csv", ',')
+    return centroid_table
+
+
+def dunn_index(dfs, centroid_table, labels):
+    """
+    Calculates the Dunn Index for clustering.
+
+    Parameters:
+    - dfs: DataFrame of points, with each point assigned a cluster label.
+    - centroid_table: DataFrame containing centroids of each cluster.
+    - labels: Array of cluster labels for each point in dfs.
+
+    Returns:
+    - Dunn Index value
+    """
+    # Ensure labels is a NumPy array for indexing
+    labels = np.array(labels)
+
+    # Calculate the minimum inter-cluster distance (numerator)
+    numerator = float('inf')
+    for i, c1 in enumerate(centroid_table.values):
+        for j, c2 in enumerate(centroid_table.values):
+            if i >= j:
+                continue  # Avoid duplicate comparisons
+            distance = cityblock(c1, c2)
+            numerator = min(numerator, distance)
+
+    # Calculate the maximum intra-cluster distance (denominator)
+    denominator = 0
+    for cluster_label in np.unique(labels):
+        # Filter points that belong to the current cluster
+        cluster_points = dfs[labels == cluster_label].values
+
+        for i in range(len(cluster_points)):
+            for j in range(i + 1, len(cluster_points)):
+                distance = cityblock(cluster_points[i], cluster_points[j])
+                denominator = max(denominator, distance)
+
+    # Return the Dunn Index
+    return numerator / denominator if denominator != 0 else float('inf')
+
+
+def calc_davies_bouldin_index(dfs, kmeans):
+    labels = kmeans.labels_
+    print(f"Davies-Bouldin Index: {davies_bouldin_score(dfs, labels)}")
+
 
 # unscaled data
 # describe_data_out(df, "datasets/dataset_description.csv", ',')
@@ -233,7 +314,7 @@ scaled_df = pd.DataFrame(scaled_df, columns=df.columns)
 # scatter_3d(scaled_df, 'att1', 'att2', 'att3', '3D distribution of scaled data')
 
 # K-means Algorithm
-#kmeans_kwargs = {"n_clusters": 4, "init": "k-means++", "n_init": 10, "random_state": 1}
+# kmeans_kwargs = {"n_clusters": 4, "init": "k-means++", "n_init": 10, "random_state": 1}
 # plot_elbow_method(scaled_df, 1, 10, **kmeans_kwargs)
 # fig1 = plot_kmeans_3d_scatter(scaled_df, 'att1', 'att2', 'att3', "Scaled 3d k-means (k-means++) scatter plot",
 #                       **kmeans_kwargs)
@@ -244,11 +325,13 @@ scaled_df = pd.DataFrame(scaled_df, columns=df.columns)
 
 
 # k-means multi plot with different states
-my_kmeans_kwargs = {"init": "random", "random_state": 1, "max_iter": 100, "n_init": 1}
-cluster_range = np.arange(3, 7)
-multi_3d_scatter_plot(cluster_range, 'att1', 'att2', 'att3', display=True, **my_kmeans_kwargs)
+#my_kmeans_kwargs = {"init": "k-means++", "random_state": 1, "max_iter": 100, "n_init": 5}
+#cluster_range = np.arange(3, 11)
+#multi_3d_scatter_plot(scaled_df, cluster_range, 'att1', 'att2', 'att3', display_individual_plot=True,
+#                     plot_centroids=True, display_dunn_index=True, **my_kmeans_kwargs)
 
-
+# my_kmeans_kwargs = {'n_clusters': 3, "init": "random", "random_state": 1, "max_iter": 100, "n_init": 1}
+# parallel_centroid_plot(scaled_df, **my_kmeans_kwargs)
 
 # Agglomerative/Divisive Clustering
 # single linkage - not biased for globular shapes
@@ -270,7 +353,7 @@ multi_3d_scatter_plot(cluster_range, 'att1', 'att2', 'att3', display=True, **my_
 
 # DBScan
 # Note: Below is from a subjective perspective a decent clustering of the data, eps=0.3, min_samples=5
-# plot_dbscan_3d_scatter(dfs=scaled_df, x='att1', y='att2', z='att3', eps=0.3, min_samples=5)
+plot_dbscan_3d_scatter(dfs=scaled_df, x='att1', y='att2', z='att3', eps=0.3, min_samples=5)
 
 # plot_optimal_eps(scaled_df, 5)
 
@@ -296,17 +379,7 @@ param_grid = {
 
 
 #create a dataframe with the centroids
-centroid_table = pd.DataFrame(krandom_model.cluster_centers_, columns=scaled_df.columns)
-centroid_table['cluster'] = ['centroid 0', 'centroid 1', 'centroid 2']
-print(centroid_table.head())
-#plot the centroids
-fig = px.parallel_coordinates(centroid_table, 'cluster')
-plt.show()
 
-
-#Plot Centroids
-centroid_table = pd.DataFrame(results.cluster_centers_, columns=scaled_df.columns)
-print(centroid_table)
 """
 
 # 1. Understand the Business Requirement
