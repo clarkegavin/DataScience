@@ -15,6 +15,7 @@ from sklearn.model_selection import GridSearchCV
 from sklearn.neighbors import NearestNeighbors
 from sklearn.preprocessing import StandardScaler
 from sklearn.metrics import davies_bouldin_score
+from itertools import product
 
 import seaborn as sns
 
@@ -112,17 +113,30 @@ def plot_agglomerative_3d_scatter(dfs, n_clusters, linkage, x, y, z, title="Aggl
         return fig
 
 
-def plot_dbscan_3d_scatter(dfs, x, y, z, eps=0.5, min_samples=5, title="DBSCAN 3D Scatter Plot", display=True):
+
+def plot_dbscan_3d_scatter(dfs, x, y, z, eps=0.5, min_samples=5, plot_iter=0, title="DBSCAN 3D Scatter Plot",
+                           display=True, show_centroids=False):
     dbscan_model = DBSCAN(eps=eps, min_samples=min_samples)
     dbscan_model.fit_predict(dfs)
     dfs['cluster'] = dbscan_model.labels_
-    print(dfs.head())
+    #print(dfs.head())
+    data_out(dfs, 'datasets/dbscan.csv', ',')
     print(
-        f"Number of datapoints per cluster: eps={eps} | min_samples={min_samples} \n {dfs.groupby('cluster')['cluster'].value_counts()}")
-    fig = px.scatter_3d(dfs, x=x, y=y, z=z, color='cluster', title=title)
+        f"Number of datapoints per cluster: eps={eps} | min_samples={min_samples} "
+        f"\n {dfs.groupby('cluster')['cluster'].value_counts()}")
+    fig = px.scatter_3d(dfs, x=x, y=y, z=z, color='cluster', title=f"{title} <br> <span style = 'font-size: 10px'>"
+                                                                   f"eps={eps} | min_samples={min_samples}</span>")
+
+    if show_centroids:
+        # print(get_centroid_table(dfs, dbscan_model))
+        print(f"Dunn Index: {dunn_index(dfs, get_centroid_table(dfs, dbscan_model), dbscan_model.labels_)}")
+        print(f"Davies-Bouldin Score: {davies_bouldin_score(dfs, dbscan_model.labels_)}")
+
     if display:
-        plotly.offline.plot(fig)
+        plotly.offline.plot(fig, filename=f'DBSCAN 3D Scatter Plot {plot_iter}.html')
     return fig
+
+
 
 
 def plot_optimal_eps(dfs, n_neighbors):
@@ -137,6 +151,15 @@ def plot_optimal_eps(dfs, n_neighbors):
     plt.title(f'k-Distance Plot for k={n_neighbors}')
     plt.grid = True
     plt.show()
+
+
+def silhouette_scorer(estimator, X):
+    """ Custom scoring function for silhouette score. """
+    labels = estimator.fit_predict(X)  # Fit and predict labels
+    if len(set(labels)) < 2:  # Check if there's at least 2 clusters
+        return -1  # Return a negative score if not enough clusters
+    return silhouette_score(X, labels)  # Calculate silhouette score
+
 
 
 def dbscan_gridsearch(dfs, eps_from, eps_to, eps_increment, min_samples_from, min_samples_to):
@@ -169,35 +192,40 @@ def kmeans_gridsearch(dfs):
 def grid_search(dfs, param_grid, algo):
     if algo == 'kmeans':
         kmeans = KMeans()
-        grid_search = GridSearchCV(kmeans, param_grid)
+        grid_search = GridSearchCV(kmeans, param_grid, cv=5) #  added cv for cross validation
         grid_search.fit(dfs)
         print(f"KMeans Best Parameters: {grid_search.best_params_}")
     elif algo == 'agglomerative':
         aggl = AgglomerativeClustering()
-        grid_search = GridSearchCV(dfs, param_grid)
+        grid_search = GridSearchCV(dfs, param_grid, cv=5)
         grid_search.fit(dfs)
-        print(f"DBSCAN Best Parameters: {grid_search.best_params_}")
+        print(f"Agglomerative Best Parameters: {grid_search.best_params_}")
     elif algo == 'dbscan':
+        warnings.filterwarnings("ignore")  # filter warnings from sklearn for when it can't assign a cluster
         dbscan = DBSCAN()
-        grid_search = GridSearchCV(dbscan, param_grid)
+        custom_scorer = make_scorer(silhouette_scorer)
+        #grid_search = GridSearchCV(dbscan, param_grid, scoring=custom_scorer, cv=5)
+        grid_search = GridSearchCV(dbscan, param_grid, scoring=silhouette_score)
         grid_search.fit(dfs)
         print(f"DBSCAN Best Parameters: {grid_search.best_params_}")
     else:
         print(f"ERROR: Invalid algorithm: {algo}")
 
+    return grid_search.best_params_
+
 
 # Display a grid of 3d scatter plots, 2 columns wide for an unknown number of plots
 def multi_3d_scatter_plot(dfs, n_cluster_range, x, y, z, display_individual_plot=True, plot_centroids=0,
-                          **kmeans_kwargs):
+                          **kwargs):
     num_plots = n_cluster_range[-1] - n_cluster_range[0] + 1  # upper bound
     num_cols = 2  # always use 2 columns
-    num_rows = int((num_plots + num_cols - 1) // num_cols)  # calculate number of rows rather than relying on parameter
+    num_rows = int((num_plots + num_cols - 1) // num_cols)  # calculate number of rows required
 
     fig = make_subplots(rows=num_rows, cols=num_cols,
                         subplot_titles=[f"<span style = 'font-size: 10px'> n_clusters: {i} | "
-                                        f"init: {kmeans_kwargs['init']} | "
-                                        f"n_init: {kmeans_kwargs['n_init']} | "
-                                        f"random_state: {kmeans_kwargs['random_state']} </span>"
+                                        f"init: {kwargs['init']} | "
+                                        f"n_init: {kwargs['n_init']} | "
+                                        f"random_state: {kwargs['random_state']} </span>"
                                         for i in range(n_cluster_range[0], n_cluster_range[-1] + 1)],
 
                         vertical_spacing=0.1,
@@ -206,14 +234,14 @@ def multi_3d_scatter_plot(dfs, n_cluster_range, x, y, z, display_individual_plot
 
     for i, n_clusters in enumerate(n_cluster_range, start=1):
         # kmeans_kwargs = {"n_clusters": n_clusters, "init": "random", "random_state": 1}
-        kmeans_kwargs['n_clusters'] = n_clusters
-        kmeans_fig = plot_kmeans_3d_scatter(dfs, x, y, z, f"3D Scatter Plot: init: {kmeans_kwargs['init']} <br> "
-                                                          f"<span style = 'font-size: 10px'>n_clusters: {kmeans_kwargs['n_clusters']} |"
-                                                          f"n_init: {kmeans_kwargs['n_init']} | "
-                                                          f"random_state: {kmeans_kwargs['random_state']}</span>",
+        kwargs['n_clusters'] = n_clusters
+        kmeans_fig = plot_kmeans_3d_scatter(dfs, x, y, z, f"3D Scatter Plot: init: {kwargs['init']} <br> "
+                                                          f"<span style = 'font-size: 10px'>n_clusters: {kwargs['n_clusters']} |"
+                                                          f"n_init: {kwargs['n_init']} | "
+                                                          f"random_state: {kwargs['random_state']}</span>",
                                             display_individual_plot=display_individual_plot,
                                             plot_centroids=plot_centroids, plot_iter=i,
-                                            **kmeans_kwargs)
+                                            **kwargs)
 
         # Determine row & column based on the iteration index
         row = (i - 1) // 2 + 1
@@ -234,6 +262,76 @@ def multi_3d_scatter_plot(dfs, n_cluster_range, x, y, z, display_individual_plot
     plotly.offline.plot(fig, filename='Multi 3D Scatter Plot.html')
 
 
+def multi_dbscan_3d_scatter_plot(dfs, x, y, z, display_individual_plot=True,
+                                 show_centroids=False, **kwargs):
+    num_plots = (len(kwargs['eps'])) * len(kwargs['min_samples'])  # plot for each eps and min_samples
+    print(num_plots)
+    num_cols = 2  # always use 2 columns
+    # num_rows = int((num_plots + num_cols - 1) // num_cols)  # calculate number of rows required
+    num_rows = (num_plots + num_cols - 1) // num_cols
+
+    titles = [
+                 f"<span style='font-size: 10px'>eps: {eps} | min_samples: {min_samples} | </span>"
+                 for eps, min_samples in product(kwargs['eps'], kwargs['min_samples'])
+             ][:num_plots]
+
+    specs = [[{'type': 'scatter3d'} for _ in range(num_cols)] for _ in range(num_rows)]
+
+    fig = make_subplots(rows=num_rows, cols=num_cols,
+                        subplot_titles=titles,
+                        vertical_spacing=0.05,
+                        specs=specs)
+
+    #fig.print_grid()
+
+    for i, min_sample_values in enumerate(kwargs['min_samples']):
+        for j, eps_value in enumerate(kwargs['eps']):
+            # Calculate the plot index
+            plot_index = i * len(kwargs['eps']) + j
+
+            # Calculate row and column for the subplot grid
+            row = plot_index // num_cols + 1  # Convert to 1-based index
+            col = plot_index % num_cols + 1  # Convert to 1-based index
+
+            # Debug: print current plot index, row, col
+            #print(
+            #    f"Plot Index: {plot_index}, Row: {row}, Col: {col}, eps: {eps_value}, min_samples: {min_sample_values}")
+
+            dbscan_fig = plot_dbscan_3d_scatter(dfs, x, y, z, eps=eps_value, min_samples=min_sample_values,
+                                                plot_iter=plot_index,
+                                                title=f"DBSCAN 3D Scatter Plot: <br> "
+                                                      f"<span style = 'font-size: 10px'>eps: {eps_value} |"
+                                                      f"min_samples: {min_sample_values} | </span>",
+                                                display=display_individual_plot, show_centroids=show_centroids)
+
+            # Debug: check if data is present
+            #if dbscan_fig.data:
+            #    print(f"Adding trace for plot index {plot_index}")
+            fig.add_trace(dbscan_fig.data[0], row=row, col=col)
+            #else:
+            #    print(f"No data found for plot index {plot_index}")
+
+            scene_id = f'scene{plot_index + 1}'
+            fig.update_layout({
+                scene_id: dict(
+                    xaxis_title=f"{x}",
+                    yaxis_title=f"{y}",
+                    zaxis_title=f"{z}",
+                    #aspectratio=dict(x=1, y=1, z=1)
+                )
+            })
+
+    fig.update_layout(height=600 * num_rows, width=600 * num_cols,
+                      #margin=dict(l=10, r=10, t=10, b=10),
+                      title_text="DBSCAN Clustering with Varying eps and min_samples <br>",
+                      #scene=dict(
+                      #    aspectmode='auto',  # Ensures the aspect ratio fits the space
+                      #)
+                      )
+
+    plotly.offline.plot(fig, filename='Multi DBSCAN 3D Scatter Plot.html')
+
+
 def parallel_centroid_plot(dfs, kmeans_model, centroid_table, plot_iter=0, **kmeans_kwargs):
     kmeans_model.fit(dfs)
 
@@ -248,6 +346,28 @@ def parallel_centroid_plot(dfs, kmeans_model, centroid_table, plot_iter=0, **kme
     data_out(centroid_table, "datasets/centroid_table.csv", ',')
     return centroid_table
 
+def get_centroid_table(dfs, model):
+    # Fit the model to the data
+    model.fit(dfs)
+
+    # Retrieve labels for each point to identify clusters
+    labels = model.labels_
+
+    # Filter out noise points, which are labeled as -1
+    unique_clusters = [label for label in set(labels) if label != -1]
+
+    # Calculate the mean (centroid) of each cluster and store in a dictionary
+    centroids = {}
+    for cluster in unique_clusters:
+        cluster_points = dfs[labels == cluster]
+        centroids[cluster] = cluster_points.mean()
+
+    # Convert the centroid dictionary to a DataFrame
+    centroid_table = pd.DataFrame(centroids).T
+    centroid_table.columns = dfs.columns
+    centroid_table['cluster'] = unique_clusters  # Assign cluster labels
+
+    return centroid_table.reset_index(drop=True)
 
 def dunn_index(dfs, centroid_table, labels):
     """
@@ -325,9 +445,9 @@ scaled_df = pd.DataFrame(scaled_df, columns=df.columns)
 
 
 # k-means multi plot with different states
-#my_kmeans_kwargs = {"init": "k-means++", "random_state": 1, "max_iter": 100, "n_init": 5}
-#cluster_range = np.arange(3, 11)
-#multi_3d_scatter_plot(scaled_df, cluster_range, 'att1', 'att2', 'att3', display_individual_plot=True,
+# my_kmeans_kwargs = {"init": "k-means++", "random_state": 1, "max_iter": 100, "n_init": 5}
+# cluster_range = np.arange(3, 8)
+# multi_3d_scatter_plot(scaled_df, cluster_range, 'att1', 'att2', 'att3', display_individual_plot=True,
 #                     plot_centroids=True, display_dunn_index=True, **my_kmeans_kwargs)
 
 # my_kmeans_kwargs = {'n_clusters': 3, "init": "random", "random_state": 1, "max_iter": 100, "n_init": 1}
@@ -353,11 +473,27 @@ scaled_df = pd.DataFrame(scaled_df, columns=df.columns)
 
 # DBScan
 # Note: Below is from a subjective perspective a decent clustering of the data, eps=0.3, min_samples=5
-plot_dbscan_3d_scatter(dfs=scaled_df, x='att1', y='att2', z='att3', eps=0.3, min_samples=5)
+dbscan_kwargs = {'eps': np.arange(0.25, 2, 0.25),
+                 'min_samples': range(4, 7),
+                 'scoring': ['silhouette_score']
+                 }
 
-# plot_optimal_eps(scaled_df, 5)
+plot_dbscan_3d_scatter(dfs=scaled_df, x='att1', y='att2', z='att3', eps=1.25, min_samples=4, plot_iter=0, show_centroids=False)
+#multi_dbscan_3d_scatter_plot(dfs=scaled_df, x='att1', y='att2', z='att3', display_individual_plot=False,
+#                             show_centroids=True,
+#                            **dbscan_kwargs)
 
-# dbscan_gridsearch(scaled_df, eps_from=0.5, eps_to=2, eps_increment=0.25, min_samples_from=5, min_samples_to=10)
+#plot_optimal_eps(scaled_df, 5)
+
+param_grid = {
+    'eps': np.arange(0.25, 2, 0.25),
+    'min_samples': range(3, 8)
+}
+
+
+#best_params = grid_search(scaled_df, param_grid, 'dbscan')
+
+#dbscan_gridsearch(scaled_df, eps_from=0.25, eps_to=2, eps_increment=0.25, min_samples_from=2, min_samples_to=8)
 
 param_grid = {
     'n_clusters': range(2, 10),
@@ -368,22 +504,4 @@ param_grid = {
 }
 # grid_search(scaled_df, param_grid, 'kmeans')
 
-param_grid = {
-    'eps': np.arange(0.5, 2, 0.25),
-    'min_samples': range(2, 5),
-    'scoring': ['silhouette_score']
-}
 
-"""
-
-
-
-#create a dataframe with the centroids
-
-"""
-
-# 1. Understand the Business Requirement
-# 2. Understand the data
-# 3. Prepare the data
-# 5. Prepare the model (k-means, hierarchical clustering or DBScan - suggested, pick 2)
-# 5. Evaluate
