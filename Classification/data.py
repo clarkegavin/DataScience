@@ -57,7 +57,7 @@ def scale_continuous_data(df):
     scaled_values = scaler.fit_transform(df_copy[numeric_cols])
 
     df_copy[numeric_cols] = scaled_values
-    return df_copy
+    return df_copy, scaler
 
 
 def encode_categorical_data_le(df):
@@ -101,3 +101,9 @@ def remove_class_label(df, class_label):
     df_predictive = df[[class_label]]
     print(f"Predictive data :{df_predictive}")
     return df_descriptive, df_predictive
+
+
+def get_numerical_attributes(df):
+    numerical_cols = df.select_dtypes(include=['object', 'category']).columns
+    print(numerical_cols.dtype)
+    return numerical_cols
