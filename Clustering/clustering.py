@@ -56,7 +56,7 @@ def duplicate_check(dfs):
 def histogram(dfs):
     """ Custom function to display a histogram using plotly"""
     print("Histogram Plot")
-    df.hist(figsize=(10, 7))
+    dfs.hist(figsize=(10, 7))
     plt.show()
 
 
@@ -431,46 +431,46 @@ def calc_davies_bouldin_index(dfs, kmeans):
 
 
 # unscaled data - initial observations
-describe_data_out(df, "datasets/dataset_description.csv", ',')
-describe_data(df)
-calc_variance(df)
-null_check(df)
-duplicate_check(df)
-histogram(df)
-scatter_3d(df, 'att1', 'att2', 'att3', '3D distribution of unscaled data')
+# describe_data_out(df, "datasets/dataset_description_unscaled.csv", ',')
+# describe_data(df)
+# calc_variance(df)
+# null_check(df)
+# duplicate_check(df)
+# histogram(df)
+# scatter_3d(df, 'att1', 'att2', 'att3', '3D distribution of unscaled data')
 
 # scaled data - initial observations
 scaled_df = StandardScaler().fit_transform(df)
 scaled_df = pd.DataFrame(scaled_df, columns=df.columns)
-describe_data_out(scaled_df, "datasets/dataset_description.csv", ',')
-describe_data(scaled_df)
-calc_variance(scaled_df)
-null_check(scaled_df)
-duplicate_check(scaled_df)
-histogram(scaled_df)
-scatter_3d(scaled_df, 'att1', 'att2', 'att3', '3D distribution of scaled data')
+# describe_data_out(scaled_df, "datasets/dataset_description.csv", ',')
+# describe_data(scaled_df)
+# calc_variance(scaled_df)
+# null_check(scaled_df)
+# duplicate_check(scaled_df)
+# histogram(scaled_df)
+# scatter_3d(scaled_df, 'att1', 'att2', 'att3', '3D distribution of scaled data')
 
-# K-Means algorithm - specifying number of clusters
-kmeans_kwargs = {"n_clusters": 4, "init": "k-means++", "n_init": 10, "random_state": 1}
-fig1 = plot_kmeans_3d_scatter(scaled_df, 'att1', 'att2', 'att3', "Scaled 3d k-means (k-means++) scatter plot",
-                              **kmeans_kwargs)
-# Plot elbow method
-kmeans_kwargs = {"init": "k-means++", "n_init": 10, "random_state": 1}
-plot_elbow_method(scaled_df, 1, 10, **kmeans_kwargs)
+# # K-Means algorithm - specifying number of clusters
+# kmeans_kwargs = {"n_clusters": 4, "init": "k-means++", "n_init": 10, "random_state": 1}
+# fig1 = plot_kmeans_3d_scatter(scaled_df, 'att1', 'att2', 'att3', "Scaled 3d k-means (k-means++) scatter plot",
+#                               **kmeans_kwargs)
+# # Plot elbow method
+# kmeans_kwargs = {"init": "k-means++", "n_init": 10, "random_state": 1}
+# plot_elbow_method(scaled_df, 1, 10, **kmeans_kwargs)
+#
+# # K-Means algorithm n_clusters = 7
+# kmeans_kwargs = {"n_clusters": 7, "init": "k-means++", "random_state": 1, "max_iter": 300,  "n_init": 5}
+# fig2 = plot_kmeans_3d_scatter(scaled_df, 'att1', 'att2', 'att3', "Scaled 3d k-means (random) scatter plot",
+#                               **kmeans_kwargs)
+#
+# # K-Means multi plot with different states
+# kmeans_kwargs = {"init": "k-means++", "random_state": 1, "max_iter": 100, "n_init": 5}
+# cluster_range = np.arange(3, 8)
+# multi_3d_scatter_plot(scaled_df, cluster_range, 'att1', 'att2', 'att3', display_individual_plot=True,
+#                       plot_centroids=True, display_dunn_index=True, **kmeans_kwargs)
 
-# K-Means algorithm n_clusters = 7
-kmeans_kwargs = {"n_clusters": 7, "init": "k-means++", "random_state": 1, "max_iter": 300,  "n_init": 5}
-fig2 = plot_kmeans_3d_scatter(scaled_df, 'att1', 'att2', 'att3', "Scaled 3d k-means (random) scatter plot",
-                              **kmeans_kwargs)
 
-# K-Means multi plot with different states
-kmeans_kwargs = {"init": "k-means++", "random_state": 1, "max_iter": 100, "n_init": 5}
-cluster_range = np.arange(3, 8)
-multi_3d_scatter_plot(scaled_df, cluster_range, 'att1', 'att2', 'att3', display_individual_plot=True,
-                      plot_centroids=True, display_dunn_index=True, **kmeans_kwargs)
-
-
-my_kmeans_kwargs = {'n_clusters': 3, "init": "random", "random_state": 1, "max_iter": 100, "n_init": 1}
+# my_kmeans_kwargs = {'n_clusters': 3, "init": "random", "random_state": 1, "max_iter": 100, "n_init": 1}
 # deprecated!
 # parallel_centroid_plot(scaled_df, **my_kmeans_kwargs)
 
@@ -479,17 +479,17 @@ my_kmeans_kwargs = {'n_clusters': 3, "init": "random", "random_state": 1, "max_i
 # complete linkage - biased for globular but sensitive to noise
 # Average/Centroid/Ward - biased for globular clusters but not as senstive to noise - potential option
 
-plot_agglomerative_3d_scatter(scaled_df, 3, 'complete', 'att1', 'att2', 'att3', 'Agglomerative Clustering [Complete] -'
-                                                                               ' scaled dataset')
-
-plot_agglomerative_3d_scatter(scaled_df, 3, 'single', 'att1', 'att2', 'att3', 'Agglomerative Clustering [Single] -'
-                                                                               ' scaled dataset')
-
-plot_agglomerative_3d_scatter(scaled_df, 3, 'average', 'att1', 'att2', 'att3', 'Agglomerative Clustering [Average] -'
-                                                                               ' scaled dataset')
-
-plot_agglomerative_3d_scatter(scaled_df, 3, 'ward', 'att1', 'att2', 'att3', 'Agglomerative Clustering [Ward] -'
-                                                                               ' scaled dataset')
+# plot_agglomerative_3d_scatter(scaled_df, 3, 'complete', 'att1', 'att2', 'att3', 'Agglomerative Clustering [Complete] -'
+#                                                                                ' scaled dataset')
+#
+# plot_agglomerative_3d_scatter(scaled_df, 3, 'single', 'att1', 'att2', 'att3', 'Agglomerative Clustering [Single] -'
+#                                                                                ' scaled dataset')
+#
+# plot_agglomerative_3d_scatter(scaled_df, 3, 'average', 'att1', 'att2', 'att3', 'Agglomerative Clustering [Average] -'
+#                                                                                ' scaled dataset')
+#
+# plot_agglomerative_3d_scatter(scaled_df, 3, 'ward', 'att1', 'att2', 'att3', 'Agglomerative Clustering [Ward] -'
+#                                                                                ' scaled dataset')
 
 
 # DBScan
@@ -498,13 +498,16 @@ dbscan_kwargs = {'eps': np.arange(0.25, 2, 0.25),
                 'min_samples': range(4, 7),
                 'scoring': ['silhouette_score']
                 }
+#
+# plot_dbscan_3d_scatter(dfs=scaled_df, x='att1', y='att2', z='att3', eps=1.25, min_samples=4, plot_iter=0,
+#                        show_centroids=False)
 
-plot_dbscan_3d_scatter(dfs=scaled_df, x='att1', y='att2', z='att3', eps=1.25, min_samples=4, plot_iter=0,
+plot_dbscan_3d_scatter(dfs=scaled_df, x='att1', y='att2', z='att3', eps=0.25, min_samples=5, plot_iter=0,
                        show_centroids=False)
 
-# Unused in report
-multi_dbscan_3d_scatter_plot(dfs=scaled_df, x='att1', y='att2', z='att3', display_individual_plot=False,
-                            show_centroids=True, **dbscan_kwargs)
+# # Unused in report
+# multi_dbscan_3d_scatter_plot(dfs=scaled_df, x='att1', y='att2', z='att3', display_individual_plot=False,
+#                             show_centroids=True, **dbscan_kwargs)
 
 # plot_optimal_eps(scaled_df, 5)
 param_grid = {
@@ -515,12 +518,12 @@ param_grid = {
 
 # best_params = grid_search(scaled_df, param_grid, 'dbscan')
 
-dbscan_gridsearch(scaled_df, eps_from=0.25, eps_to=2, eps_increment=0.25, min_samples_from=2, min_samples_to=8)
-param_grid = {
-    'n_clusters': range(2, 10),
-    'init': ['k-means++', 'random'],
-    'n_init': [5, 10, 15],
-    'max_iter': [100, 200, 300, 400, 500],
-    'random_state': [1, 16, 34, 57]
-}
-grid_search(scaled_df, param_grid, 'kmeans')
+# dbscan_gridsearch(scaled_df, eps_from=0.25, eps_to=2, eps_increment=0.25, min_samples_from=2, min_samples_to=8)
+# param_grid = {
+#     'n_clusters': range(2, 10),
+#     'init': ['k-means++', 'random'],
+#     'n_init': [5, 10, 15],
+#     'max_iter': [100, 200, 300, 400, 500],
+#     'random_state': [1, 16, 34, 57]
+# }
+# grid_search(scaled_df, param_grid, 'kmeans')
