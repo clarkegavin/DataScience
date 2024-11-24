@@ -1,7 +1,7 @@
 import pandas as pd
 import csv
 import logging
-from sklearn.preprocessing import StandardScaler, LabelEncoder
+from sklearn.preprocessing import StandardScaler, LabelEncoder, OneHotEncoder
 from ExceptionHandling import CustomFileNotFoundError
 
 
@@ -29,6 +29,7 @@ def clean_data(df):
 def print_data_statistics(df):
     """ Custom function to print dataframe statistics to console"""
     df.info()
+    # print(df.describe(include='object'))
     print(df.describe())
 
 
@@ -50,12 +51,13 @@ def data_out(data, path, separator=','):
 
 def scale_continuous_data(df):
     """ Custom function to scale numerical data"""
-    numeric_cols = df.select_dtypes(include='float64').columns
+    df_copy = df.copy()  # scale a copy, otherwise the original dataframe gets altered
+    numeric_cols = df_copy.select_dtypes(include='float64').columns
     scaler = StandardScaler()
-    scaled_values = scaler.fit_transform(df[numeric_cols])
+    scaled_values = scaler.fit_transform(df_copy[numeric_cols])
 
-    df[numeric_cols] = scaled_values
-    return df
+    df_copy[numeric_cols] = scaled_values
+    return df_copy
 
 
 def encode_categorical_data_le(df):
@@ -72,4 +74,30 @@ def encode_categorical_data_le(df):
 
 
 def encode_categorical_data_ohe(df):
-    pass
+    """
+    Custom function to encode categorical data using one hot encoder
+    :param df: Input Dataframe with categorical columns to encode
+    :return: Encoded DataFrame and a dictionary of OneHotEncoder objects
+    """
+
+    categorical_cols = df.select_dtypes(include=['object', 'category']).columns
+    ohe = OneHotEncoder(sparse_output=False, handle_unknown='ignore')
+    encoded_array = ohe.fit_transform(df[categorical_cols])
+
+    encoded_df = pd.DataFrame(
+        encoded_array,
+        columns=ohe.get_feature_names_out(categorical_cols),
+        index=df.index
+    )
+    non_categorical_df = df.drop(columns=categorical_cols)
+    final_df = pd.concat([non_categorical_df, encoded_df], axis=1)
+
+    return final_df, ohe
+
+
+def remove_class_label(df, class_label):
+    df_descriptive = df[df.columns.difference([class_label])]
+    print(df_descriptive.head())
+    df_predictive = df[[class_label]]
+    print(f"Predictive data :{df_predictive}")
+    return df_descriptive, df_predictive
