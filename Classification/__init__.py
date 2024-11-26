@@ -22,25 +22,27 @@ def process_adult_dataset():
     assessment - adult dataset
     """
     return ProcessData(
-        data.read_data(file_location="datasets/assesment_adult_dataset.csv", sep=';'), data_out="dataout/adult/")
+        data.read_data(file_location="datasets/assesment_adult_dataset.csv", sep=';'), data_out="dataout/adult/"), "label"
 
 
 def process_student_dataset():
     """
     assessment - student dataset
     """
-    return ProcessData(
-        data.read_data(file_location="datasets/assesment_student_dataset.csv", sep=';'), data_out="dataout/student/")
+    processed = ProcessData(
+        data.read_data(file_location="datasets/assessment_student_dataset.csv", sep=';'), data_out="dataout/student/")
+    processed.clean_data()
+    return processed, "Pass"
 
 
-processed_data = process_adult_dataset()
-# processed_data = process_student_dataset()
+processed_data, class_label = process_adult_dataset()
+#processed_data, class_label = process_student_dataset()
 
 df = processed_data.process_data() # Output data statistics
-processed_data.plot_correlation_matrix() # correlation matrix
+processed_data.plot_correlation_matrix(class_label) # correlation matrix
 df_scaled, scaler = processed_data.scale_data(df) # scale the data
-df_encoded_unscaled, df_predictive_unscaled, encoder_unscaled = processed_data.encode_data(df)  # Unscaled Encoded
-df_encoded_scaled, df_predictive, encoder = processed_data.encode_data(df_scaled)  # Scaled Encoded
+df_encoded_unscaled, df_predictive_unscaled, encoder_unscaled = processed_data.encode_data(df, class_label)  # Unscaled Encoded
+df_encoded_scaled, df_predictive, encoder = processed_data.encode_data(df_scaled, class_label)  # Scaled Encoded
 
 # Copy unscaled data for usage in model
 X = df_encoded_unscaled.copy()

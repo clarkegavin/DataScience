@@ -10,6 +10,12 @@ class ProcessData:
         #self.data_in = data_in
         self.data_out = data_out
 
+    def get_dataframe(self):
+        return self.df
+
+    def clean_data(self):
+        data.clean_data(self.df)
+
     def process_data(self):
 
         # print data statistics
@@ -38,8 +44,8 @@ class ProcessData:
 
         return self.df
 
-    def plot_correlation_matrix(self):
-        plts.scatter_plot_matrix(self.df, hue='label')
+    def plot_correlation_matrix(self, class_label):
+        plts.scatter_plot_matrix(self.df, hue=class_label)
 
     def scale_data(self, df):
         # scale continuous data
@@ -48,9 +54,9 @@ class ProcessData:
         data.data_out(df_scaled.describe(), self.data_out + "describe_scaled.csv", ",")
         return df_scaled, scaler
 
-    def encode_data(self, df):
+    def encode_data(self, df, class_label):
         # Separate the descriptive attributes from the class label column
-        df_descriptive, df_predictive = data.remove_class_label(df, 'label')  # unscaled
+        df_descriptive, df_predictive = data.remove_class_label(df, class_label)  # unscaled
         # Encode adult categorical data using one hot encoder
         df_encoded, encoder = data.encode_categorical_data_ohe(df_descriptive)  # unscaled/encoded
         data.data_out(df_encoded, self.data_out + "ohe.csv")
