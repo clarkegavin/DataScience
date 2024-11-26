@@ -86,3 +86,7 @@ def scatter_plot_matrix(df, hue=None, figsize=(15, 15), marker='o', alpha=0.7):
 # scatter_plot_matrix(df, hue='label', figsize=(10, 10))
 
 
+def plot_correlation_matrix(df):
+    plt.matshow(df.corr())
+    plt.show()
+
