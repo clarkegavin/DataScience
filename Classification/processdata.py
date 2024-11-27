@@ -1,7 +1,7 @@
 import os
 
-import data as data  # custom utility
-import plots as plts  # custom utility
+import Classification.data as data  # custom utility
+import Classification.plots as plts  # custom utility
 
 
 class ProcessData:
@@ -14,7 +14,9 @@ class ProcessData:
         return self.df
 
     def clean_data(self):
+        print(f"Cleaning data..... \n{self.df.head()}")
         data.clean_data(self.df)
+        print(f"Data Cleaned..... \n{self.df.head()}")
 
     def process_data(self):
 

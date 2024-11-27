@@ -17,6 +17,7 @@ class KNN:
             self.X, self.y, test_size=0.2, random_state=43)
         self.validate("train")
 
+
     def train(self):
         # X_train, X_test, y_train, y_test = train_test_split(self.X, self.y, test_size=0.2, random_state=43)
         # ad.custom_crossvalidation(self.X_train, self.y_train, self.knn_clf)
@@ -37,7 +38,6 @@ class KNN:
         pipeline.fit(self.X_train, self.y_train)
         y_pred = pipeline.predict(self.X_test)
         print(f"Prediction Report\n:")
-        # ad.custom_crossvalidation(self.X_test, self.y_test, self.knn_clf)
         self.validate("test")
 
     def validate(self, type):

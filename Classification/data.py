@@ -11,7 +11,8 @@ def read_data(file_location, remove_quotes=False, sep=','):
     """
     try:
         if remove_quotes:
-            df = pd.read_csv(file_location, sep=sep, skipinitialspace=True, quoting=csv.QUOTE_ALL, engine='python')
+            #df = pd.read_csv(file_location, sep=sep, skipinitialspace=True, quoting=csv.QUOTE_ALL, engine='python')
+            df = pd.read_csv(file_location, sep=sep, skipinitialspace=True, quotechar='"', engine='python')
         else:
             df = pd.read_csv(file_location, sep=';')
         return df
