@@ -1,7 +1,7 @@
 import pandas as pd
 import csv
 import logging
-from sklearn.preprocessing import StandardScaler, LabelEncoder, OneHotEncoder
+from sklearn.preprocessing import StandardScaler, LabelEncoder, OneHotEncoder, MinMaxScaler
 from ExceptionHandling import CustomFileNotFoundError
 
 
@@ -60,6 +60,14 @@ def scale_continuous_data(df):
     df_copy[numeric_cols] = scaled_values
     return df_copy, scaler
 
+def scale_min_max(df):
+    df_copy = df.copy()
+    numeric_cols = df_copy.select_dtypes(include='number').columns
+    scaler = MinMaxScaler()
+    scaled_values = scaler.fit_transform(df_copy[numeric_cols])
+    df_copy[numeric_cols] = scaled_values
+    return df_copy, scaler
+
 
 def encode_categorical_data_le(df):
     """ Custom function to encode categorical data and return the encoded dataframe and a dictonary
@@ -98,13 +106,10 @@ def encode_categorical_data_ohe(df):
 
 def remove_class_label(df, class_label):
     df_descriptive = df[df.columns.difference([class_label])]
-    print(df_descriptive.head())
     df_predictive = df[[class_label]]
-    print(f"Predictive data :{df_predictive}")
     return df_descriptive, df_predictive
 
 
 def get_numerical_attributes(df):
     numerical_cols = df.select_dtypes(include=['object', 'category']).columns
-    print(numerical_cols.dtype)
     return numerical_cols

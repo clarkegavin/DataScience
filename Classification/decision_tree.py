@@ -19,7 +19,6 @@ class DTree:
         self.validate("train")
 
     def validate(self, type, y_pred=None):
-        print("Validate")
         if type == "train":
             print(f"Training dataset evaluation:")
             plts.custom_plot_tree(self.dt_clf, self.X_train)
@@ -29,9 +28,9 @@ class DTree:
             plts.custom_plot_tree(self.dt_clf, self.X_test)
             #plts.custom_plot_tree(self.dt_clf, y_pred)
             # QUESTION: Should I be trying to validate/plot the output of the pipeline rather than x/y test?
-            ad.custom_crossvalidation(self.X_test, self.y_test, self.dt_clf)
+            #ad.custom_crossvalidation(self.X_test, self.y_test, self.dt_clf)
+            ad.custom_crossvalidation(self.X_test, y_pred, self.dt_clf)
             #ad.custom_crossvalidation(self.y_test, y_pred, self.dt_clf)
-
 
     def predict(self):
         """
@@ -55,7 +54,7 @@ class DTree:
 
         # Check if I need this...
         print(f"Prediction Classification Report:\n {classification_report(self.y_test, y_pred)}")
-        print(f"Prediction Report\n:")
+        print(f"Prediction Report:\n")
         self.validate("test", y_pred)
 
 

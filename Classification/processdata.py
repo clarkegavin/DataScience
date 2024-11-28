@@ -14,9 +14,7 @@ class ProcessData:
         return self.df
 
     def clean_data(self):
-        print(f"Cleaning data..... \n{self.df.head()}")
         data.clean_data(self.df)
-        print(f"Data Cleaned..... \n{self.df.head()}")
 
     def process_data(self):
 
@@ -49,10 +47,14 @@ class ProcessData:
     def plot_correlation_matrix(self, class_label):
         plts.scatter_plot_matrix(self.df, hue=class_label)
 
-    def scale_data(self, df):
+    def scale_data(self, df, type = 'Standard'):
         # scale continuous data
-        df_scaled, scaler = data.scale_continuous_data(df)
-        # output scaled data description for validation
+        if type == 'Standard':
+            df_scaled, scaler = data.scale_continuous_data(df)
+            # output scaled data description for validation
+        elif type == 'MinMaxScaler':
+            df_scaled, scaler = data.scale_min_max(df)
+
         data.data_out(df_scaled.describe(), self.data_out + "describe_scaled.csv", ",")
         return df_scaled, scaler
 

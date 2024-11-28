@@ -1,6 +1,9 @@
 import sys
 
+from sklearn.naive_bayes import ComplementNB
 from sklearn.neighbors import KNeighborsClassifier
+from sklearn.linear_model import LinearRegression
+
 import Classification.data as data  # custom utility
 import Classification.adsa_utils as ad
 import Classification.plots as plts  # custom utility
@@ -9,14 +12,19 @@ from Classification.processdata import ProcessData
 import pandas as pd
 import csv
 from Classification.decision_tree import DTree
+from Classification.naive_bayes import NBayes
+from Classification.logistic_regression import LRegression
 from sklearn.tree import DecisionTreeClassifier, plot_tree
 
-
-PROCESS = 'ADULT'
+# Configuration parameters for selective classifiers, set to True if you want to display a train a particular model
+PROCESS = 'STUDENT'
 GRID_SEARCH = False
-KNN = False
-DT = True
+KNN_CLASSIFIER = False
+DT_CLASSIFIER = False
+NB_CLASSIFIER = False
+LR_CLASSIFIER = True
 CORRELATION_MATRIX = False
+
 
 def process_adult_dataset():
     """
@@ -44,15 +52,14 @@ if __name__ == "__main__":
 
     if PROCESS == 'ADULT':
         processed_data, class_label = process_adult_dataset()
-    elif PROCESS =='STUDENT':
+    elif PROCESS == 'STUDENT':
         processed_data, class_label = process_student_dataset()
     else:
         # Error
         sys.exit()
 
-
     df = processed_data.process_data()  # Output data statistics
-    print(f"DEBUG: \n {df.head()}")
+
     if CORRELATION_MATRIX:
         processed_data.plot_correlation_matrix(class_label)  # correlation matrix
 
@@ -66,14 +73,13 @@ if __name__ == "__main__":
     y = df_predictive_unscaled.copy()
 
     # KNN
-    if KNN:
+    if KNN_CLASSIFIER:
         print("------------KNN--------------------")
         # Baseline - no scaling, no hyperparameter adjustments
 
         knn_clf = KNN(X=X, y=y, scaler=scaler, encoder=encoder,
                       knn_clf=KNeighborsClassifier())
         knn_clf.predict()
-
 
         # Scaled adult dataset (using one hot encoder)
         X = df_encoded_scaled.copy()
@@ -95,14 +101,13 @@ if __name__ == "__main__":
         #     print(grid_search.best_params_)
         #     print(grid_search.best_score_)
 
-
         # KNN with best parameters
 
         knn_clf = KNN(X=X, y=y, scaler=scaler, encoder=encoder,
                       knn_clf=KNeighborsClassifier(n_neighbors=10, p=1, weights='distance'))
         knn_clf.predict()
 
-    if DT:
+    if DT_CLASSIFIER:
         print("-------------Decision Trees----------------------")
         X = df_encoded_unscaled
         y = df_predictive
@@ -137,7 +142,46 @@ if __name__ == "__main__":
         dt_clf.predict()
 
     # Naive Bayes
+    if NB_CLASSIFIER:
+        print("-------------Naive Bayes--------------")
+        print("Baseline")
+        X = df_encoded_unscaled
+
+        y = df_predictive
+
+        nb_clf = NBayes(X=X, y=y, scaler=None, encoder=encoder,
+                        nb_clf=ComplementNB(alpha=0, force_alpha=True, norm=False))
+        nb_clf.predict()
+
+
+
+        print("Baseline Scaled")
+        # scale the data in range [0,1] as Naive Bayes doesn't handle negative numbers
+        df_scaled, scaler = processed_data.scale_data(df, type='MinMaxScaler')
+        df_encoded_scaled, df_predictive, encoder = processed_data.encode_data(df_scaled, class_label)  # Scaled Encoded
+        X = df_encoded_scaled
+        y = df_predictive
+        nb_clf = NBayes(X=X, y=y, scaler=scaler, encoder=encoder,
+                        nb_clf=ComplementNB(alpha=0, force_alpha=True, norm=False))
+        nb_clf.predict()
+
+
+        # change alpha hyper parameter - small
+        print("Baseline Scaled - small value alpha")
+        nb_clf = NBayes(X=X, y=y, scaler=scaler, encoder=encoder,
+                        nb_clf=ComplementNB(alpha=0.00001))
+        nb_clf.predict()
+
+        # change alpha hyper parameter - large
+        print("Baseline Scaled - large value alpha")
+        nb_clf = NBayes(X=X, y=y, scaler=scaler, encoder=encoder,
+                        nb_clf=ComplementNB(alpha=10))
+        nb_clf.predict()
+
 
     # Ensembles
 
+
     # Logistic Regression
+    if LR_CLASSIFIER:
+        lr_clf = LRegression(X=X, y=y, scaler=scaler, encoder=encoder, lr_clf=LinearRegression())
