@@ -13,6 +13,7 @@ def histogram(dfs, title="Histogram"):
 
 def custom_plot_tree(dt_clf, df):
     plt.figure(figsize=(25, 16))
+    print(f"Decision Tree Classes: \n {dt_clf.classes_} ")
     plot_tree(dt_clf, filled=True, feature_names=list(df.columns), class_names=dt_clf.classes_)
     plt.show()
 

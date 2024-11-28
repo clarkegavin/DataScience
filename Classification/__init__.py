@@ -14,8 +14,9 @@ from sklearn.tree import DecisionTreeClassifier, plot_tree
 
 PROCESS = 'ADULT'
 GRID_SEARCH = False
-SKIP_KNN = True
-SKIP_DT = False
+KNN = False
+DT = True
+CORRELATION_MATRIX = False
 
 def process_adult_dataset():
     """
@@ -52,7 +53,9 @@ if __name__ == "__main__":
 
     df = processed_data.process_data()  # Output data statistics
     print(f"DEBUG: \n {df.head()}")
-    processed_data.plot_correlation_matrix(class_label)  # correlation matrix
+    if CORRELATION_MATRIX:
+        processed_data.plot_correlation_matrix(class_label)  # correlation matrix
+
     df_scaled, scaler = processed_data.scale_data(df)  # scale the data
     df_encoded_unscaled, df_predictive_unscaled, encoder_unscaled = processed_data.encode_data(df,
                                                                                                class_label)  # Unscaled Encoded
@@ -63,7 +66,7 @@ if __name__ == "__main__":
     y = df_predictive_unscaled.copy()
 
     # KNN
-    if SKIP_KNN == False:
+    if KNN:
         print("------------KNN--------------------")
         # Baseline - no scaling, no hyperparameter adjustments
 
@@ -94,12 +97,43 @@ if __name__ == "__main__":
 
 
         # KNN with best parameters
+
         knn_clf = KNN(X=X, y=y, scaler=scaler, encoder=encoder,
                       knn_clf=KNeighborsClassifier(n_neighbors=10, p=1, weights='distance'))
         knn_clf.predict()
 
-    if SKIP_DT == False:
+    if DT:
+        print("-------------Decision Trees----------------------")
+        X = df_encoded_unscaled
+        y = df_predictive
         dt_clf = DTree(X=X, y=y, encoder=encoder, dt_clf=DecisionTreeClassifier(random_state=43))
+        dt_clf.predict()
+
+        # change entropy
+        print("----Shannon's Entropy--------")
+        dt_clf = DecisionTreeClassifier(criterion='entropy')
+
+        # pre pruning
+        print("----Pre Pruning--------")
+        dt_clf = DecisionTreeClassifier(max_depth=10,
+                                        min_samples_split=5,
+                                        min_samples_leaf=3,
+                                        random_state=43)
+        dt_clf = DTree(X=X, y=y, encoder=encoder, dt_clf=dt_clf)
+        dt_clf.predict()
+        # post pruning
+        print("----Post Pruning--------")
+        dt_clf = DecisionTreeClassifier(ccp_alpha=0.007)
+        dt_clf = DTree(X=X, y=y, encoder=encoder, dt_clf=dt_clf)
+        dt_clf.predict()
+        # combined pre/post pruning
+        print("----Combined Pre and Post--------")
+        dt_clf = DecisionTreeClassifier(max_depth=10,
+                                        min_samples_split=5,
+                                        min_samples_leaf=3,
+                                        ccp_alpha=0.007,
+                                        random_state=43)
+        dt_clf = DTree(X=X, y=y, encoder=encoder, dt_clf=dt_clf)
         dt_clf.predict()
 
     # Naive Bayes
