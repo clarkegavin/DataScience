@@ -46,8 +46,10 @@ def get_data_info(df):
 
 def data_out(data, path, separator=','):
     """ Custom function to print list or dict to csv file"""
+
     if isinstance(data, list) or isinstance(data, dict) or isinstance(data, pd.DataFrame):
-        data.to_csv(path_or_buf=path, sep=separator)
+            data.to_csv(path_or_buf=path, sep=separator)
+
 
 
 def scale_continuous_data(df):

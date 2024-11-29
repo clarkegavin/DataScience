@@ -58,14 +58,16 @@ class ProcessData:
         data.data_out(df_scaled.describe(), self.data_out + "describe_scaled.csv", ",")
         return df_scaled, scaler
 
-    def encode_data(self, df, class_label):
+    def encode_data(self, df, class_label, encoder='ohe'):
         # Separate the descriptive attributes from the class label column
-        df_descriptive, df_predictive = data.remove_class_label(df, class_label)  # unscaled
-        # print(f"Encode Data(): Descriptive Before Encoding: {df_descriptive.head()}")
-        # print(f"Encode Data(): Predictive Before Encoding: {df_predictive.head()}")
-        # Encode adult categorical data using one hot encoder
-        df_encoded, encoder = data.encode_categorical_data_ohe(df_descriptive)  # unscaled/encoded
-        # print(f"Encode Data(): Predictive After Encoding: {df_predictive.head()}")
-        data.data_out(df_encoded, self.data_out + "ohe.csv")
-        data.data_out(data.get_data_info(df_encoded), self.data_out + "ohe_info.csv")
+        df_descriptive, df_predictive = data.remove_class_label(df, class_label)
+
+        if encoder == 'ohe':
+            # Encode adult categorical data using one hot encoder
+            df_encoded, encoder = data.encode_categorical_data_ohe(df_descriptive)  # unscaled/encoded
+        else:
+            df_encoded, encoder = data.encode_categorical_data_le(df_descriptive)
+
+        data.data_out(df_encoded, self.data_out + "encoded.csv")
+        data.data_out(data.get_data_info(df_encoded), self.data_out + "encoded_info.csv")
         return df_encoded, df_predictive, encoder

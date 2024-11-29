@@ -15,14 +15,15 @@ from Classification.decision_tree import DTree
 from Classification.naive_bayes import NBayes
 from Classification.logistic_regression import LRegression
 from sklearn.tree import DecisionTreeClassifier, plot_tree
+import numpy as np
 
 # Configuration parameters for selective classifiers, set to True if you want to display a train a particular model
 PROCESS = 'STUDENT'
 GRID_SEARCH = False
 KNN_CLASSIFIER = False
-DT_CLASSIFIER = False
+DT_CLASSIFIER = True
 NB_CLASSIFIER = False
-LR_CLASSIFIER = True
+LR_CLASSIFIER = False
 CORRELATION_MATRIX = False
 
 
@@ -52,8 +53,10 @@ if __name__ == "__main__":
 
     if PROCESS == 'ADULT':
         processed_data, class_label = process_adult_dataset()
+        print("Adult Dataset")
     elif PROCESS == 'STUDENT':
         processed_data, class_label = process_student_dataset()
+        print("Student Dataset")
     else:
         # Error
         sys.exit()
@@ -69,8 +72,8 @@ if __name__ == "__main__":
     df_encoded_scaled, df_predictive, encoder = processed_data.encode_data(df_scaled, class_label)  # Scaled Encoded
 
     # Copy unscaled data for usage in model
-    X = df_encoded_unscaled.copy()
-    y = df_predictive_unscaled.copy()
+    X = df_encoded_unscaled.copy() # class label has been droped
+    y = df_predictive_unscaled.copy() # class label only
 
     # KNN
     if KNN_CLASSIFIER:
@@ -145,37 +148,69 @@ if __name__ == "__main__":
     if NB_CLASSIFIER:
         print("-------------Naive Bayes--------------")
         print("Baseline")
+
         X = df_encoded_unscaled
-
         y = df_predictive
-
+        data.data_out(y, "dataout/adult/test_label_split.csv")
         nb_clf = NBayes(X=X, y=y, scaler=None, encoder=encoder,
                         nb_clf=ComplementNB(alpha=0, force_alpha=True, norm=False))
         nb_clf.predict()
 
 
 
-        print("Baseline Scaled")
-        # scale the data in range [0,1] as Naive Bayes doesn't handle negative numbers
+        # print("Baseline Scaled")
+        # # scale the data in range [0,1] as Naive Bayes doesn't handle negative numbers
         df_scaled, scaler = processed_data.scale_data(df, type='MinMaxScaler')
-        df_encoded_scaled, df_predictive, encoder = processed_data.encode_data(df_scaled, class_label)  # Scaled Encoded
+        df_encoded_scaled, df_predictive, encoder = processed_data.encode_data(df_scaled, class_label, encoder='le')  # Scaled Encoded
+
         X = df_encoded_scaled
         y = df_predictive
+        # nb_clf = NBayes(X=X, y=y, scaler=scaler, encoder=encoder,
+        #                 nb_clf=ComplementNB(alpha=0, force_alpha=True, norm=False))
+        # nb_clf.predict()
+
+        # change alpha hyper parameter - small
+        print("Alpha = 0.00001 | Norm =True")
         nb_clf = NBayes(X=X, y=y, scaler=scaler, encoder=encoder,
-                        nb_clf=ComplementNB(alpha=0, force_alpha=True, norm=False))
+                        nb_clf=ComplementNB(alpha=0.00001, norm=True))
         nb_clf.predict()
 
 
-        # change alpha hyper parameter - small
-        print("Baseline Scaled - small value alpha")
+        print("Alpha = 0.00001 | Norm =False")
         nb_clf = NBayes(X=X, y=y, scaler=scaler, encoder=encoder,
-                        nb_clf=ComplementNB(alpha=0.00001))
+                        nb_clf=ComplementNB(alpha=0.00001, norm=False))
         nb_clf.predict()
 
         # change alpha hyper parameter - large
-        print("Baseline Scaled - large value alpha")
+        print("Alpha = 10 | Norm =True")
         nb_clf = NBayes(X=X, y=y, scaler=scaler, encoder=encoder,
-                        nb_clf=ComplementNB(alpha=10))
+                        nb_clf=ComplementNB(alpha=10, norm=True))
+        nb_clf.predict()
+
+        # change alpha hyper parameter - large
+        print("Alpha = 10 | Norm =False")
+        nb_clf = NBayes(X=X, y=y, scaler=scaler, encoder=encoder,
+                        nb_clf=ComplementNB(alpha=10, norm=True))
+        nb_clf.predict()
+
+
+        if GRID_SEARCH:
+            nb_clf.custom_grid_search()
+
+        # for alpha in np.arange(0.1, 3, 0.1):
+        #     print(f"alpha={alpha}")
+        #     nb_clf = NBayes(X=X, y=y, scaler=scaler, encoder=encoder,
+        #                     nb_clf=ComplementNB(alpha=alpha, norm=True), show_confusion=True)
+
+        # Best Params when using OneHotEncoder
+        # print("Grid Search Best Params: Alpha = 0.5501 | Norm =True")
+        # nb_clf = NBayes(X=X, y=y, scaler=scaler, encoder=encoder,
+        #                 nb_clf=ComplementNB(alpha=0.5501, norm=True))
+        # nb_clf.predict()
+
+        print("Grid Search Best Params: Alpha = 0.0001 | Norm =False")
+        nb_clf = NBayes(X=X, y=y, scaler=scaler, encoder=encoder,
+                        nb_clf=ComplementNB(alpha=0.0001, norm=False))
         nb_clf.predict()
 
 

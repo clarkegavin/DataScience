@@ -133,7 +133,7 @@ def plot_confusion_matrix(y_test, predictions):
                             index=labels, columns=labels)
   plt.figure(figsize=(5, 5))
   sns.heatmap(data=confusion_frame, annot=True, square=True,
-              cbar=False)
+              cbar=False, fmt='d')
   plt.xlabel('Predicted Labels')
   plt.ylabel('Actual Labels')
   plt.show()
