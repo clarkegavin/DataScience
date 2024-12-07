@@ -1,9 +1,11 @@
 from sklearn.compose import ColumnTransformer
+from sklearn.inspection import permutation_importance
 
 import adsa_utils as ad
 from sklearn.model_selection import train_test_split
 from sklearn.neighbors import KNeighborsClassifier
 from sklearn.pipeline import Pipeline
+import plots as plts  # custom utility
 
 
 class KNN:
@@ -22,6 +24,16 @@ class KNN:
         # X_train, X_test, y_train, y_test = train_test_split(self.X, self.y, test_size=0.2, random_state=43)
         # ad.custom_crossvalidation(self.X_train, self.y_train, self.knn_clf)
         pass
+
+    def feature_importance(self):
+        # fit the classifier
+        self.knn_clf.fit(self.X_train, self.y_train)
+        # calculate permutation importance
+        result = permutation_importance(self.knn_clf, self.X_test, self.y_test, n_repeats=10, random_state=42)
+        # get the feature importance scores
+        importance_scores = result.importances_mean
+        plts.plot_importance(self.X_train.columns, importance_scores)
+
 
     def predict(self):
         num_columns = self.X_train.select_dtypes(include=['number']).columns.tolist()

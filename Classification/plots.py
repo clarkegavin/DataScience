@@ -11,6 +11,7 @@ def histogram(dfs, title="Histogram"):
     plt.title(title)
     plt.show()
 
+
 def custom_plot_tree(dt_clf, df):
     plt.figure(figsize=(25, 16))
     print(f"Decision Tree Classes: \n {dt_clf.classes_} ")
@@ -22,7 +23,6 @@ def custom_scatter_plot(df, x, y, class_label):
     sns.scatterplot(data=df, x=x, y=y, hue=class_label)
     plt.title('Relationship between Age, Hours Per Week, and Label')
     plt.show()
-
 
 
 import pandas as pd
@@ -66,7 +66,8 @@ def scatter_plot_matrix(df, hue=None, figsize=(15, 15), marker='o', alpha=0.7):
                 ax.set_ylabel('Frequency')
             else:
                 # Scatter plot for combinations
-                sns.scatterplot(data=df, x=col2, y=col1, hue=hue, marker=marker, alpha=alpha, ax=ax, legend=(i == 0 and j == num_cols - 1))
+                sns.scatterplot(data=df, x=col2, y=col1, hue=hue, marker=marker, alpha=alpha, ax=ax,
+                                legend=(i == 0 and j == num_cols - 1))
 
             # Set axis labels only on edges
             if j == 0:
@@ -83,6 +84,7 @@ def scatter_plot_matrix(df, hue=None, figsize=(15, 15), marker='o', alpha=0.7):
     plt.tight_layout()
     plt.show()
 
+
 # Example usage:
 # scatter_plot_matrix(df, hue='label', figsize=(10, 10))
 
@@ -91,3 +93,11 @@ def plot_correlation_matrix(df):
     plt.matshow(df.corr())
     plt.show()
 
+
+def plot_importance(cols, scores):
+    plt.figure(figsize=(10, 6))
+    plt.barh(cols, scores)
+    plt.xlabel('Importance Score')
+    plt.ylabel('Features')
+    plt.title('Permutation Feature Importance')
+    plt.show()

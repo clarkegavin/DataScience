@@ -18,10 +18,10 @@ from sklearn.tree import DecisionTreeClassifier, plot_tree
 import numpy as np
 
 # Configuration parameters for selective classifiers, set to True if you want to display a train a particular model
-PROCESS = 'STUDENT'
+PROCESS = 'ADULT'
 GRID_SEARCH = False
-KNN_CLASSIFIER = False
-DT_CLASSIFIER = True
+KNN_CLASSIFIER = True
+DT_CLASSIFIER = False
 NB_CLASSIFIER = False
 LR_CLASSIFIER = False
 CORRELATION_MATRIX = False
@@ -93,6 +93,7 @@ if __name__ == "__main__":
                       knn_clf=KNeighborsClassifier())
         knn_clf.predict()
 
+
         # if GRID_SEARCH == True:
         #     # grid search for best parameters
         #     params = {'n_neighbors': range(3, 11),
@@ -109,6 +110,8 @@ if __name__ == "__main__":
         knn_clf = KNN(X=X, y=y, scaler=scaler, encoder=encoder,
                       knn_clf=KNeighborsClassifier(n_neighbors=10, p=1, weights='distance'))
         knn_clf.predict()
+        print("Feature Importance")
+        knn_clf.feature_importance()
 
     if DT_CLASSIFIER:
         print("-------------Decision Trees----------------------")
