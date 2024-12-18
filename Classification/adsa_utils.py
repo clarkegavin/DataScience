@@ -66,11 +66,13 @@ def scatter_2d_matrix(data, reg_cols, color_col=None):
 ############################################################################
 
 """
-    Plots the silhouette scores for the specified clustering algorithm and range of cluster sizes.
+    Plots the silhouette scores for the specified clustering algorithm and 
+    range of cluster sizes.
     
     Parameters:
     - data: The dataset (numpy array or pandas DataFrame).
-    - algorithm: The clustering algorithm (e.g., AgglomerativeClustering or KMeans) instantiated without the number of clusters.
+    - algorithm: The clustering algorithm (e.g., AgglomerativeClustering or KMeans) 
+    instantiated without the number of clusters.
     - cluster_range: List of integers representing the number of clusters to evaluate.
 """
 def plot_silhouettes(data, algorithm, cluster_range):
@@ -82,7 +84,8 @@ def plot_silhouettes(data, algorithm, cluster_range):
     axs = axs.flatten()
     # Loop through the specified number of clusters
     for i, n_clusters in enumerate(cluster_range):
-        # Create an instance of the clustering algorithm with the specified number of clusters
+        # Create an instance of the clustering algorithm with the specified
+        # number of clusters
         model = algorithm.set_params(n_clusters=n_clusters)
         # Fit the model and obtain cluster labels
         cluster_labels = model.fit_predict(data)
@@ -95,12 +98,15 @@ def plot_silhouettes(data, algorithm, cluster_range):
         # Plot silhouette scores for each cluster
         for j in range(n_clusters):
             # Aggregate silhouette scores for samples in cluster j
-            ith_cluster_silhouette_values = sample_silhouette_values[cluster_labels == j]
+            ith_cluster_silhouette_values = \
+                sample_silhouette_values[cluster_labels == j]
             ith_cluster_silhouette_values.sort()
             size_cluster_j = ith_cluster_silhouette_values.shape[0]
             y_upper = y_lower + size_cluster_j
             color = cm.nipy_spectral(float(j) / n_clusters)
-            axs[i].fill_betweenx(np.arange(y_lower, y_upper), 0, ith_cluster_silhouette_values, facecolor=color, edgecolor=color, alpha=0.7)
+            axs[i].fill_betweenx(np.arange(y_lower, y_upper), 0,
+                                 ith_cluster_silhouette_values,
+                                 facecolor=color, edgecolor=color, alpha=0.7)
             # Label the silhouette plots with cluster numbers
             axs[i].text(-0.05, y_lower + 0.5 * size_cluster_j, str(j))
             # Update the y_lower for the next plot
@@ -140,17 +146,26 @@ def plot_confusion_matrix(y_test, predictions):
 
 
 """
-function to output the average scores and their stds for accuracy, precision, recall, and f-measure metrics;
+function to output the average scores and their stds for accuracy, 
+precision, recall, and f-measure metrics;
 it takes as arguments the classifier, the regular attributes data, the label column data;
 it defines 1 default parameter: the number of folds that's set to 5
 """
 def cross_validation_avg_scores(clf, X, y, cv_=5):
   scoring_metrics = ['accuracy', 'precision_macro', 'recall_macro', 'f1_macro']
   scores = cross_validate(clf, X, y, scoring=scoring_metrics, groups=y, cv=cv_)
-  print(f"Mean accuracy: {scores['test_accuracy'].mean()*100:.2f}% +/-{scores['test_accuracy'].std()*100:.2f}%")
-  print(f"Mean precision: {scores['test_precision_macro'].mean()*100:.2f}% +/-{scores['test_precision_macro'].std()*100:.2f}%")
-  print(f"Mean recall: {scores['test_recall_macro'].mean()*100:.2f}% +/-{scores['test_recall_macro'].std()*100:.2f}%")
-  print(f"Mean F1-score is {scores['test_f1_macro'].mean()*100:.2f}% +/-{scores['test_f1_macro'].std()*100:.2f}%")
+  print(f"Mean accuracy: "
+        f"{scores['test_accuracy'].mean()*100:.2f}% +/-"
+        f"{scores['test_accuracy'].std()*100:.2f}%")
+  print(f"Mean precision: "
+        f"{scores['test_precision_macro'].mean()*100:.2f}% +/-"
+        f"{scores['test_precision_macro'].std()*100:.2f}%")
+  print(f"Mean recall: "
+        f"{scores['test_recall_macro'].mean()*100:.2f}% +/-"
+        f"{scores['test_recall_macro'].std()*100:.2f}%")
+  print(f"Mean F1-score is "
+        f"{scores['test_f1_macro'].mean()*100:.2f}% +/-"
+        f"{scores['test_f1_macro'].std()*100:.2f}%")
 
 ## function that combines the 2 above
 def custom_crossvalidation(X, y, clf, cv_=5):
@@ -161,8 +176,10 @@ def custom_crossvalidation(X, y, clf, cv_=5):
 
 
 """
-function to generate the test dataset with added columns for predictions and confidence levels;
-it takes as arguments an already trained classifier, the regualr attributes data, and the corresponding labels
+function to generate the test dataset with added columns for 
+predictions and confidence levels;
+it takes as arguments an already trained classifier,
+the regualr attributes data, and the corresponding labels
 """
 def get_test_dataset(clf, X_test, y_test):
   confidences = clf.predict_proba(X_test)
@@ -177,7 +194,8 @@ def get_test_dataset(clf, X_test, y_test):
 
 """
 function to generate and plot multiclass rocs for several classifiers;
-it takes as arguments a dictionary of classifiers, the regular data, the label data, the size of the test portion, and the random state
+it takes as arguments a dictionary of classifiers, the regular data, 
+the label data, the size of the test portion, and the random state
 """
 def plot_multiclass_roc(clfs_dict, X, y, test_size_=0.3, random_state_=43):
   # binarize the labels for multi-class ROC
@@ -268,7 +286,8 @@ import statsmodels.api as sm
 def get_relevant_ols_results(X, y, add_const=True, print_=True):
     if add_const:
         X = sm.add_constant(X, has_constant='add')
-    X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=43)
+    X_train, X_test, y_train, y_test = train_test_split(X, y,
+                                                        test_size=0.2, random_state=43)
     model = sm.OLS(y_train, X_train).fit()
     if print_:
         preds = model.predict(X_test)
@@ -307,7 +326,8 @@ def ols_xval(X, y, cv_=5, output_AIC=False):
     R2s.append(model.rsquared)
     AICs.append(model.aic)
   print(f"Average Cross-validated R-squared: {np.mean(R2s):.2f} +/- {np.std(R2s):.2f}")
-  print(f"Average Cross-validated Adjusted R-squared: {np.mean(adj_R2s):.2f} +/- {np.std(adj_R2s):.2f}")
+  print(f"Average Cross-validated Adjusted R-squared: "
+        f"{np.mean(adj_R2s):.2f} +/- {np.std(adj_R2s):.2f}")
   if(output_AIC):
     print(f"Average Cross-validated AIC: {np.mean(AICs):.2f} +/- {np.std(AICs):.2f}")
   print(f"Average Cross-validated MAE: {np.mean(MAEs):.2f} +/- {np.std(MAEs):.2f}")

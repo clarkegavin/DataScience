@@ -17,7 +17,8 @@ from Classification.logistic_regression import LRegression
 from sklearn.tree import DecisionTreeClassifier, plot_tree
 import numpy as np
 
-# Configuration parameters for selective classifiers, set to True if you want to display a train a particular model
+# Configuration parameters for selective classifiers, set to True if you want to display/
+# train a particular model
 PROCESS = 'ADULT'
 GRID_SEARCH = False
 KNN_CLASSIFIER = True
@@ -67,13 +68,15 @@ if __name__ == "__main__":
         processed_data.plot_correlation_matrix(class_label)  # correlation matrix
 
     df_scaled, scaler = processed_data.scale_data(df)  # scale the data
-    df_encoded_unscaled, df_predictive_unscaled, encoder_unscaled = processed_data.encode_data(df,
-                                                                                               class_label)  # Unscaled Encoded
-    df_encoded_scaled, df_predictive, encoder = processed_data.encode_data(df_scaled, class_label)  # Scaled Encoded
+    df_encoded_unscaled, df_predictive_unscaled, \
+    encoder_unscaled = processed_data.encode_data(df,
+                                                  class_label)  # Unscaled Encoded
+    df_encoded_scaled, df_predictive, \
+    encoder = processed_data.encode_data(df_scaled, class_label)  # Scaled Encoded
 
     # Copy unscaled data for usage in model
-    X = df_encoded_unscaled.copy() # class label has been droped
-    y = df_predictive_unscaled.copy() # class label only
+    X = df_encoded_unscaled.copy()  # class label has been droped
+    y = df_predictive_unscaled.copy()  # class label only
 
     # KNN
     if KNN_CLASSIFIER:
@@ -93,7 +96,6 @@ if __name__ == "__main__":
                       knn_clf=KNeighborsClassifier())
         knn_clf.predict()
 
-
         # if GRID_SEARCH == True:
         #     # grid search for best parameters
         #     params = {'n_neighbors': range(3, 11),
@@ -108,7 +110,8 @@ if __name__ == "__main__":
         # KNN with best parameters
 
         knn_clf = KNN(X=X, y=y, scaler=scaler, encoder=encoder,
-                      knn_clf=KNeighborsClassifier(n_neighbors=10, p=1, weights='distance'))
+                      knn_clf=KNeighborsClassifier(
+                          n_neighbors=10, p=1, weights='distance'))
         knn_clf.predict()
         print("Feature Importance")
         knn_clf.feature_importance()
@@ -117,7 +120,8 @@ if __name__ == "__main__":
         print("-------------Decision Trees----------------------")
         X = df_encoded_unscaled
         y = df_predictive
-        dt_clf = DTree(X=X, y=y, encoder=encoder, dt_clf=DecisionTreeClassifier(random_state=43))
+        dt_clf = DTree(X=X, y=y, encoder=encoder,
+                       dt_clf=DecisionTreeClassifier(random_state=43))
         dt_clf.predict()
 
         # change entropy
@@ -159,12 +163,12 @@ if __name__ == "__main__":
                         nb_clf=ComplementNB(alpha=0, force_alpha=True, norm=False))
         nb_clf.predict()
 
-
-
         # print("Baseline Scaled")
         # # scale the data in range [0,1] as Naive Bayes doesn't handle negative numbers
         df_scaled, scaler = processed_data.scale_data(df, type='MinMaxScaler')
-        df_encoded_scaled, df_predictive, encoder = processed_data.encode_data(df_scaled, class_label, encoder='le')  # Scaled Encoded
+        df_encoded_scaled, df_predictive, \
+        encoder = processed_data.encode_data(df_scaled, class_label,
+                                             encoder='le')  # Scaled Encoded
 
         X = df_encoded_scaled
         y = df_predictive
@@ -177,7 +181,6 @@ if __name__ == "__main__":
         nb_clf = NBayes(X=X, y=y, scaler=scaler, encoder=encoder,
                         nb_clf=ComplementNB(alpha=0.00001, norm=True))
         nb_clf.predict()
-
 
         print("Alpha = 0.00001 | Norm =False")
         nb_clf = NBayes(X=X, y=y, scaler=scaler, encoder=encoder,
@@ -196,14 +199,14 @@ if __name__ == "__main__":
                         nb_clf=ComplementNB(alpha=10, norm=True))
         nb_clf.predict()
 
-
         if GRID_SEARCH:
             nb_clf.custom_grid_search()
 
         # for alpha in np.arange(0.1, 3, 0.1):
         #     print(f"alpha={alpha}")
         #     nb_clf = NBayes(X=X, y=y, scaler=scaler, encoder=encoder,
-        #                     nb_clf=ComplementNB(alpha=alpha, norm=True), show_confusion=True)
+        #                     nb_clf=ComplementNB(alpha=alpha, norm=True),
+        #                     show_confusion=True)
 
         # Best Params when using OneHotEncoder
         # print("Grid Search Best Params: Alpha = 0.5501 | Norm =True")
@@ -216,10 +219,9 @@ if __name__ == "__main__":
                         nb_clf=ComplementNB(alpha=0.0001, norm=False))
         nb_clf.predict()
 
-
     # Ensembles
-
 
     # Logistic Regression
     if LR_CLASSIFIER:
-        lr_clf = LRegression(X=X, y=y, scaler=scaler, encoder=encoder, lr_clf=LinearRegression())
+        lr_clf = LRegression(X=X, y=y, scaler=scaler, encoder=encoder,
+                             lr_clf=LinearRegression())
