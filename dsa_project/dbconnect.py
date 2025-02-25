@@ -8,7 +8,7 @@ def connect():
 
 
 def get_top100_data(engine):
-    data = pd.read_sql("SELECT TOP 100 * FROM acled", engine)
+    data = pd.read_sql("SELECT TOP 10000 * FROM acled", engine)
     return data
 
 def get_all_data(engine):
